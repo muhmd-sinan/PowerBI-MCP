@@ -1,0 +1,82 @@
+{
+  "current_account_index": 0,
+  "accounts": {
+    "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json": {
+      "failures": 0,
+      "last_failure_time": 0.0,
+      "models_cached_at": 1782113868.0118325,
+      "stats": {
+        "total_requests": 0,
+        "successful_requests": 0,
+        "failed_requests": 0
+      }
+    }
+  },
+  "model_to_accounts": {
+    "auto-kiro": {
+      "accounts": [
+        "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
+      ]
+    },
+    "claude-haiku-4.5": {
+      "accounts": [
+        "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
+      ]
+    },
+    "claude-opus-4.5": {
+      "accounts": [
+        "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
+      ]
+    },
+    "claude-opus-4.6": {
+      "accounts": [
+        "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
+      ]
+    },
+    "claude-opus-4.7": {
+      "accounts": [
+        "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
+      ]
+    },
+    "claude-sonnet-4.8": {
+      "accounts": [
+        "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
+      ]
+    },
+    "claude-sonnet-4.5": {
+      "accounts": [
+        "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
+      ]
+    },
+    "claude-sonnet-4.6": {
+      "accounts": [
+        "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
+      ]
+    },
+    "deepseek-3.2": {
+      "accounts": [
+        "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
+      ]
+    },
+    "glm-5": {
+      "accounts": [
+        "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
+      ]
+    },
+    "minimax-m2.1": {
+      "accounts": [
+        "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
+      ]
+    },
+    "minimax-m2.5": {
+      "accounts": [
+        "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
+      ]
+    },
+    "qwen3-coder-next": {
+      "accounts": [
+        "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
+      ]
+    }
+  }
+}
