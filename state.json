@@ -4,7 +4,7 @@
     "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json": {
       "failures": 0,
       "last_failure_time": 0.0,
-      "models_cached_at": 1782113868.0118325,
+      "models_cached_at": 1782251454.230433,
       "stats": {
         "total_requests": 0,
         "successful_requests": 0,
@@ -38,7 +38,7 @@
         "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
       ]
     },
-    "claude-sonnet-4.8": {
+    "claude-sonnet-4": {
       "accounts": [
         "C:\\Users\\m21si\\.aws\\sso\\cache\\kiro-auth-token.json"
       ]

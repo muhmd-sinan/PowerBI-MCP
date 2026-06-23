@@ -1,0 +1,23 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.idea/
+.vscode/
+*.log
+
+# Model weights and scalers
+models/*.pt
+models/*_scaler.json
+
+# Claude/Ruflo
+.claude-flow/
+.swarm/
+
+# OS
+Thumbs.db
+.DS_Store

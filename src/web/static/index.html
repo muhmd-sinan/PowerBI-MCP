@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futures Bot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: #0f3460;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #1a1a4e;
+        }
+
+        .header h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #757575;
+        }
+
+        .status-dot.connected { background: #00c853; }
+        .status-dot.disconnected { background: #ff1744; }
+
+        /* Layout */
+        .container {
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+            height: calc(100vh - 64px);
+        }
+
+        .left-panel {
+            flex: 0 0 60%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+        }
+
+        /* Cards */
+        .card {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid #1a1a4e;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #a0a0c0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        /* Signal Table */
+        .signal-feed {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .signal-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        .signal-table th {
+            text-align: left;
+            padding: 8px 6px;
+            background: #0f3460;
+            color: #a0a0c0;
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .signal-table td {
+            padding: 7px 6px;
+            border-bottom: 1px solid #1a1a4e;
+        }
+
+        .signal-table tr:hover { background: #1a2a4e; }
+
+        /* Direction badges */
+        .dir-long { color: #00c853; font-weight: 600; }
+        .dir-short { color: #ff1744; font-weight: 600; }
+
+        /* Status badges */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-active { background: rgba(255,214,0,0.15); color: #ffd600; }
+        .badge-won { background: rgba(0,200,83,0.15); color: #00c853; }
+        .badge-lost { background: rgba(255,23,68,0.15); color: #ff1744; }
+        .badge-expired { background: rgba(117,117,117,0.15); color: #757575; }
+        .badge-fetching { background: rgba(33,150,243,0.15); color: #2196f3; }
+        .badge-training { background: rgba(156,39,176,0.15); color: #ce93d8; }
+        .badge-backtesting { background: rgba(255,152,0,0.15); color: #ffb74d; }
+        .badge-failed { background: rgba(255,23,68,0.15); color: #ff1744; }
+        .badge-inactive { background: rgba(117,117,117,0.15); color: #757575; }
+
+        /* Stats Panel */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #a0a0c0;
+            margin-top: 2px;
+        }
+
+        /* Assets Panel */
+        .asset-list {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .asset-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #1a1a4e;
+        }
+
+        .asset-item:last-child { border-bottom: none; }
+
+        .asset-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .asset-symbol { font-weight: 600; font-size: 0.85rem; }
+        .asset-wr { font-size: 0.75rem; color: #a0a0c0; }
+
+        .asset-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .add-coin-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        /* Inputs & Buttons */
+        input[type="text"], input[type="number"] {
+            background: #1a1a2e;
+            border: 1px solid #2a2a5e;
+            color: #e0e0e0;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        input:focus { border-color: #0f3460; }
+
+        button {
+            background: #0f3460;
+            color: #e0e0e0;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        button:hover { background: #1a4a80; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-danger { background: #b71c1c; }
+        .btn-danger:hover { background: #d32f2f; }
+        .btn-small { padding: 3px 8px; font-size: 0.72rem; }
+
+        /* Config Panel */
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .config-item label {
+            display: block;
+            font-size: 0.75rem;
+            color: #a0a0c0;
+            margin-bottom: 4px;
+        }
+
+        .config-item input {
+            width: 100%;
+        }
+
+        .config-save {
+            margin-top: 12px;
+            text-align: right;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1a1a2e; }
+        ::-webkit-scrollbar-thumb { background: #2a2a5e; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3a3a6e; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #16213e;
+            border: 1px solid #0f3460;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Futures Bot</h1>
+        <div class="connection-status">
+            <div class="status-dot" id="ws-dot"></div>
+            <span id="ws-label">Connecting...</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Left: Signal Feed -->
+        <div class="left-panel">
+            <div class="card signal-feed">
+                <div class="card-title">Signal Feed</div>
+                <table class="signal-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Symbol</th>
+                            <th>Dir</th>
+                            <th>Entry</th>
+                            <th>TP1</th>
+                            <th>TP2</th>
+                            <th>TP3</th>
+                            <th>SL</th>
+                            <th>Conf</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="signal-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right Panels -->
+        <div class="right-panel">
+            <!-- Stats -->
+            <div class="card">
+                <div class="card-title">Statistics</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-winrate">--</div>
+                        <div class="stat-label">Win Rate</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-pf">--</div>
+                        <div class="stat-label">Profit Factor</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-total">--</div>
+                        <div class="stat-label">Total Signals</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-active">--</div>
+                        <div class="stat-label">Active</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assets -->
+            <div class="card">
+                <div class="card-title">Assets</div>
+                <div class="asset-list" id="asset-list"></div>
+                <div class="add-coin-row">
+                    <input type="text" id="new-coin-input" placeholder="e.g. BNBUSDT" />
+                    <button onclick="addCoin()">Add Coin</button>
+                </div>
+            </div>
+
+            <!-- Config -->
+            <div class="card">
+                <div class="card-title">Configuration</div>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label>Confidence Threshold</label>
+                        <input type="number" id="cfg-confidence" step="0.01" min="0" max="1" />
+                    </div>
+                    <div class="config-item">
+                        <label>ATR TP1 Mult</label>
+                        <input type="number" id="cfg-tp1" step="0.1" min="0.1" />
+                    </div>
+                    <div class="config-item">
+                        <label>ATR TP2 Mult</label>
+                        <input type="number" id="cfg-tp2" step="0.1" min="0.1" />
+                    </div>
+                    <div class="config-item">
+                        <label>ATR TP3 Mult</label>
+                        <input type="number" id="cfg-tp3" step="0.1" min="0.1" />
+                    </div>
+                    <div class="config-item">
+                        <label>ATR SL Mult</label>
+                        <input type="number" id="cfg-sl" step="0.1" min="0.1" />
+                    </div>
+                </div>
+                <div class="config-save">
+                    <button onclick="saveConfig()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = window.location.origin;
+        let ws = null;
+
+        // --- WebSocket ---
+        function connectWebSocket() {
+            const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${proto}//${window.location.host}/ws`);
+
+            ws.onopen = () => {
+                document.getElementById('ws-dot').className = 'status-dot connected';
+                document.getElementById('ws-label').textContent = 'Connected';
+            };
+
+            ws.onclose = () => {
+                document.getElementById('ws-dot').className = 'status-dot disconnected';
+                document.getElementById('ws-label').textContent = 'Disconnected';
+                setTimeout(connectWebSocket, 3000);
+            };
+
+            ws.onerror = () => {
+                ws.close();
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWsMessage(data);
+            };
+        }
+
+        function handleWsMessage(data) {
+            if (data.type === 'new_signal') {
+                prependSignal(data.signal);
+                loadStats();
+            } else if (data.type === 'signal_update') {
+                updateSignalRow(data.signal);
+                loadStats();
+            } else if (data.type === 'asset_update') {
+                loadAssets();
+            }
+        }
+
+        // --- Signals ---
+        function formatTime(iso) {
+            if (!iso) return '--';
+            const d = new Date(iso);
+            return d.toLocaleString('en-US', {
+                month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: false
+            });
+        }
+
+        function formatPrice(p) {
+            if (p === null || p === undefined) return '--';
+            return p >= 100 ? p.toFixed(2) : p >= 1 ? p.toFixed(4) : p.toFixed(6);
+        }
+
+        function statusBadge(status) {
+            const cls = `badge badge-${status.toLowerCase()}`;
+            return `<span class="${cls}">${status}</span>`;
+        }
+
+        function dirClass(dir) {
+            return dir === 'LONG' ? 'dir-long' : 'dir-short';
+        }
+
+        function signalRow(s) {
+            return `<tr id="signal-${s.id}">
+                <td>${formatTime(s.created_at)}</td>
+                <td>${s.symbol}</td>
+                <td class="${dirClass(s.direction)}">${s.direction}</td>
+                <td>${formatPrice(s.entry_price)}</td>
+                <td>${formatPrice(s.tp1)}</td>
+                <td>${formatPrice(s.tp2)}</td>
+                <td>${formatPrice(s.tp3)}</td>
+                <td>${formatPrice(s.sl)}</td>
+                <td>${(s.confidence * 100).toFixed(1)}%</td>
+                <td>${statusBadge(s.status)}</td>
+            </tr>`;
+        }
+
+        function prependSignal(s) {
+            const tbody = document.getElementById('signal-body');
+            tbody.insertAdjacentHTML('afterbegin', signalRow(s));
+        }
+
+        function updateSignalRow(s) {
+            const row = document.getElementById(`signal-${s.id}`);
+            if (row) {
+                row.outerHTML = signalRow(s);
+            }
+        }
+
+        async function loadSignals() {
+            try {
+                const res = await fetch(`${API}/api/signals?limit=100`);
+                const signals = await res.json();
+                const tbody = document.getElementById('signal-body');
+                tbody.innerHTML = signals.map(signalRow).join('');
+            } catch (e) {
+                console.error('Failed to load signals:', e);
+            }
+        }
+
+        // --- Stats ---
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API}/api/signals/stats`);
+                const data = await res.json();
+                document.getElementById('stat-winrate').textContent =
+                    (data.win_rate * 100).toFixed(1) + '%';
+                document.getElementById('stat-pf').textContent =
+                    data.profit_factor.toFixed(2);
+                document.getElementById('stat-total').textContent = data.total_signals;
+                document.getElementById('stat-active').textContent = data.active_signals;
+            } catch (e) {
+                console.error('Failed to load stats:', e);
+            }
+        }
+
+        // --- Assets ---
+        async function loadAssets() {
+            try {
+                const res = await fetch(`${API}/api/assets`);
+                const assets = await res.json();
+                const list = document.getElementById('asset-list');
+                list.innerHTML = assets.map(a => `
+                    <div class="asset-item">
+                        <div class="asset-info">
+                            <span class="asset-symbol">${a.symbol}</span>
+                            ${statusBadge(a.status)}
+                            <span class="asset-wr">${a.backtest_win_rate ? (a.backtest_win_rate * 100).toFixed(1) + '% WR' : ''}</span>
+                        </div>
+                        <div class="asset-actions">
+                            ${a.status === 'ACTIVE' || a.status === 'FAILED' ?
+                                `<button class="btn-small" onclick="retrainAsset('${a.symbol}')">Retrain</button>` : ''}
+                            ${a.status !== 'INACTIVE' ?
+                                `<button class="btn-small btn-danger" onclick="removeAsset('${a.symbol}')">Remove</button>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Failed to load assets:', e);
+            }
+        }
+
+        async function addCoin() {
+            const input = document.getElementById('new-coin-input');
+            const symbol = input.value.trim().toUpperCase();
+            if (!symbol) return;
+
+            try {
+                const res = await fetch(`${API}/api/assets`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbol })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(data.message);
+                    input.value = '';
+                    loadAssets();
+                } else {
+                    showToast(data.detail || 'Failed to add coin');
+                }
+            } catch (e) {
+                showToast('Network error');
+            }
+        }
+
+        async function retrainAsset(symbol) {
+            try {
+                const res = await fetch(`${API}/api/assets/${symbol}/retrain`, { method: 'POST' });
+                const data = await res.json();
+                showToast(data.message || data.detail);
+                loadAssets();
+            } catch (e) {
+                showToast('Network error');
+            }
+        }
+
+        async function removeAsset(symbol) {
+            try {
+                const res = await fetch(`${API}/api/assets/${symbol}`, { method: 'DELETE' });
+                const data = await res.json();
+                showToast(data.message || data.detail);
+                loadAssets();
+            } catch (e) {
+                showToast('Network error');
+            }
+        }
+
+        // --- Config ---
+        async function loadConfig() {
+            try {
+                const res = await fetch(`${API}/api/config`);
+                const data = await res.json();
+                document.getElementById('cfg-confidence').value = data.confidence_threshold;
+                document.getElementById('cfg-tp1').value = data.atr_tp1_mult;
+                document.getElementById('cfg-tp2').value = data.atr_tp2_mult;
+                document.getElementById('cfg-tp3').value = data.atr_tp3_mult;
+                document.getElementById('cfg-sl').value = data.atr_sl_mult;
+            } catch (e) {
+                console.error('Failed to load config:', e);
+            }
+        }
+
+        async function saveConfig() {
+            const body = {
+                confidence_threshold: parseFloat(document.getElementById('cfg-confidence').value),
+                atr_tp1_mult: parseFloat(document.getElementById('cfg-tp1').value),
+                atr_tp2_mult: parseFloat(document.getElementById('cfg-tp2').value),
+                atr_tp3_mult: parseFloat(document.getElementById('cfg-tp3').value),
+                atr_sl_mult: parseFloat(document.getElementById('cfg-sl').value),
+            };
+
+            try {
+                const res = await fetch(`${API}/api/config`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                showToast(data.message || 'Config saved');
+            } catch (e) {
+                showToast('Failed to save config');
+            }
+        }
+
+        // --- Toast ---
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // --- Init ---
+        document.addEventListener('DOMContentLoaded', () => {
+            connectWebSocket();
+            loadSignals();
+            loadStats();
+            loadAssets();
+            loadConfig();
+
+            // Refresh data periodically
+            setInterval(loadStats, 30000);
+            setInterval(loadAssets, 15000);
+        });
+
+        // Allow Enter key in coin input
+        document.getElementById('new-coin-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addCoin();
+        });
+    </script>
+</body>
+</html>

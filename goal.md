@@ -1,207 +1,79 @@
-# Goal: Claude Code ↔ Power BI MCP Integration
-
-## Objective
-
-Build an MCP (Model Context Protocol) server that enables Claude Code to control Microsoft Power BI Desktop similarly to how Claude Code can control Blender through an MCP server.
-
-The end goal is for Claude Code to create, modify, and manage Power BI dashboards directly from natural language instructions without requiring manual interaction inside Power BI.
-
-## Success Criteria
-
-A user should be able to type commands such as:
-
-* "Create a sales dashboard from sales.csv"
-* "Import this dataset and generate KPI cards for Revenue, Profit, and Orders"
-* "Create a line chart showing monthly revenue trends"
-* "Add a slicer for Region and Product Category"
-* "Generate a complete executive dashboard with insights"
-* "Export the dashboard as PDF"
-
-Claude Code should execute these tasks automatically through the MCP server.
-
----
-
-## Core Capabilities
-
-### 1. Power BI Control Layer
-
-Create a mechanism to control Power BI Desktop programmatically.
-
-Potential approaches:
-
-* Power BI PBIP project manipulation
-* Power BI Desktop automation
-* PowerShell integration
-* UI automation
-* Tabular Object Model (TOM)
-* XMLA endpoints (where applicable)
-
----
-
-### 2. Dataset Management
-
-Functions:
-
-* Import CSV files
-* Import Excel files
-* Import SQL data sources
-* Refresh datasets
-* Create relationships
-* Detect schema automatically
-
-Example MCP Tools:
-
-* import_dataset()
-* refresh_dataset()
-* create_relationship()
-
----
-
-### 3. Data Modeling
-
-Functions:
-
-* Create calculated columns
-* Create measures
-* Create DAX expressions
-* Build star schemas
-* Manage tables
-
-Example MCP Tools:
-
-* create_measure()
-* create_calculated_column()
-* create_table()
-
----
-
-### 4. Dashboard Generation
-
-Functions:
-
-* Create pages
-* Create visuals
-* Position visuals
-* Apply themes
-* Create slicers and filters
-
-Supported visuals:
-
-* KPI Cards
-* Tables
-* Matrix
-* Line Charts
-* Bar Charts
-* Pie Charts
-* Area Charts
-* Scatter Charts
-* Maps
-
-Example MCP Tools:
-
-* create_visual()
-* move_visual()
-* resize_visual()
-* apply_theme()
-
----
-
-### 5. AI Dashboard Builder
-
-Claude Code should be able to:
-
-1. Analyze dataset structure
-2. Identify useful KPIs
-3. Suggest measures
-4. Select appropriate chart types
-5. Generate a complete dashboard automatically
-
-Example:
-
-User:
-"Build a professional executive dashboard from this sales dataset."
-
-Claude Code:
-
-* Analyzes columns
-* Creates measures
-* Designs layout
-* Generates visuals
-* Produces finished dashboard
-
----
-
-## MCP Tool Design
-
-### Dataset Tools
-
-* import_dataset
-* refresh_dataset
-* list_tables
-* get_schema
-
-### Modeling Tools
-
-* create_measure
-* create_relationship
-* create_column
-* run_dax
-
-### Visualization Tools
-
-* create_dashboard_page
-* create_card
-* create_chart
-* create_table_visual
-* create_slicer
-* apply_theme
-
-### Export Tools
-
-* export_pdf
-* export_png
-* save_project
-* publish_workspace
-
----
-
-## Architecture
-
-Claude Code
-↓
-MCP Server
-↓
-Power BI Control Layer
-↓
-Power BI Desktop / PBIP Project
-↓
-Generated Dashboard
-
----
-
-## Recommended Technical Direction
-
-Avoid UI automation as the primary solution.
-
-Preferred approach:
-
-1. Use PBIP project format.
-2. Reverse engineer dashboard/page/visual JSON structures.
-3. Build an MCP server that edits PBIP files directly.
-4. Allow Claude Code to generate and modify dashboard artifacts.
-5. Open the generated PBIP in Power BI Desktop for rendering.
-
-This approach is more reliable, version controllable, and closer to how Blender MCP manipulates Blender programmatically.
-
-## Final Deliverable
-
-A production-ready MCP server that allows Claude Code to:
-
-* Create Power BI projects
-* Import datasets
-* Create measures
-* Generate visuals
-* Build complete dashboards
-* Save and export reports
-
-using natural language commands entirely from Claude Code.
+# Futures Trading Signal Bot
+
+## Overview
+
+A cryptocurrency futures trading signal bot that watches live charts across multiple timeframes concurrently and signals high-confidence directional moves with specific entry, take-profit, and stop-loss levels. Delivered via desktop notifications with a web dashboard for monitoring and configuration.
+
+## Architecture Decisions
+
+### Signal System
+- **Primary engine**: CNN-LSTM hybrid model (one model per asset)
+- **LLM role**: None in the system. Opus used manually by the user as a sanity check.
+- **Signal format**: Entry, TP1, TP2, TP3, SL
+- **TP/SL calculation**: ATR-based (TP1 = 1×ATR, TP2 = 2×ATR, TP3 = 3×ATR, SL = 1.5×ATR)
+- **Delivery**: Windows desktop notifications
+- **Confidence threshold**: 70% to fire (no cooldown)
+
+### Multi-Timeframe Strategy
+- **Primary timeframes** (signal generation): 5m, 10m, 15m
+- **Confluence timeframes** (confidence adjustment): 30m, 1h, 2h
+- **Voting**: 2/3 primary timeframes must agree on direction
+- **Multiplier**: Higher TFs agree → ×1.2 boost. Disagree → ×0.7 penalty. Mixed → ×1.0.
+
+### Model Architecture
+- **Type**: CNN-LSTM hybrid
+- **Input**: 6 channels (one per timeframe)
+- **CNN**: extracts local patterns per timeframe
+- **LSTM**: captures temporal dependencies
+- **Output**: per-timeframe softmax heads (long/short/neutral) → merged via voting + multiplier
+- **Features**: Raw normalized OHLCV + RSI(14), MACD(12/26/9), EMA 20/50/200, ATR(14), Bollinger Bands(20,2), volume delta, funding rate, open interest
+
+### Training
+- **Data**: 12 months historical from Binance (minimum before model goes live)
+- **Labels**: 50-candle forward-looking window. Long if TP1 hit before SL, Short if TP1 hit before SL (inverse), No-trade otherwise.
+- **Hardware**: Local GPU (user has one)
+- **Retraining**: Weekly on rolling 12-month window (auto-scheduled + manual trigger from dashboard)
+- **Rollback**: If retrained model backtests worse than current → keep old model, warn on dashboard
+
+### Assets
+- **Starting set**: BTC/USDT, ETH/USDT, SOL/USDT
+- **Extensible**: Add coins via web dashboard
+- **New coin pipeline**: Validate pair → fetch 12mo data → train → backtest → auto-activate if passes thresholds, reject if not. Override available.
+- **Activation thresholds**: >55% win rate AND >1.5 profit factor
+
+### Data & Infrastructure
+- **Live data**: Binance WebSocket kline streams (public + read-only API for funding/OI)
+- **API keys**: Read-only + futures permissions, stored in `.env`
+- **Database**: MySQL (candle data, signal history, config)
+- **Model storage**: `.pt` files (PyTorch)
+- **Startup**: Manual (`python main.py`), auto-reconnect with candle backfill on disconnect
+
+### Tech Stack
+- **Language**: Python (end-to-end)
+- **ML**: PyTorch (CNN-LSTM)
+- **Data**: pandas, numpy, ta-lib or pandas-ta for indicators
+- **Streaming**: python-binance WebSocket
+- **Web**: FastAPI + simple frontend
+- **Notifications**: Windows desktop (plyer or win10toast)
+- **Database**: MySQL (mysql-connector or SQLAlchemy)
+
+### System Structure
+- **One main process**: stream → features → inference → signal → notify + serves web dashboard
+- **Separate scripts**: training pipeline, backtesting
+- **Dashboard features**: live/recent signals with status, backtest results, model performance, add/remove coins, adjust thresholds, trigger retrain
+
+### Signal Tracking
+- Passive — system auto-evaluates its own signals
+- Watches live price after signal fires for TP/SL hits
+- 50-candle expiry if nothing hits
+- Running stats: win rate, avg R:R, per-TP hit rate
+- Red flag on dashboard if live win rate drops below 50% over last 30 signals
+
+## Risks & Mitigations
+
+| Risk | Mitigation |
+|------|-----------|
+| Overfitting | Train/val/test splits, dropout, backtest gate before live |
+| Market regime shift | Rolling window retrain, live win-rate monitor catches degradation |
+| ATR compression in low-vol | May need minimum ATR floor to avoid micro-signals |
+| Binance API changes | Use python-binance/ccxt which maintain compatibility |
